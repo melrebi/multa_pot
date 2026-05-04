@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de multas por Desmembración</title>
+    <style>
+        :root { --primary: #1e3a8a; --secondary: #3b82f6; --bg: #f8fafc; --text: #1e293b; --border: #e2e8f0; }
+        body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
+        .container { max-width: 1000px; margin: auto; background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1); }
+        header { border-bottom: 3px solid var(--primary); margin-bottom: 30px; padding-bottom: 20px; text-align: center; }
+        .logo-header { max-width: 150px; margin-bottom: 15px; }
+        h1 { margin: 0; color: var(--primary); font-size: 1.8rem; }
+        .subtitle { color: #64748b; font-size: 1rem; margin-top: 5px; font-weight: 500; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+        .input-card { background: #f1f5f9; padding: 25px; border-radius: 8px; }
+        label { display: block; margin: 15px 0 5px; font-weight: 600; font-size: 0.9rem; }
+        select, input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 1rem; box-sizing: border-box; }
+        .results-card { border: 1px solid var(--border); padding: 25px; border-radius: 8px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th { text-align: left; font-size: 0.8rem; color: #64748b; border-bottom: 2px solid var(--border); padding-bottom: 10px; text-transform: uppercase; }
+        td { padding: 12px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
+        .total-row { font-weight: 800; font-size: 1.4rem; color: var(--primary); text-align: right; margin-top: 25px; padding-top: 15px; border-top: 3px double var(--border); }
+        .tag { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; text-transform: uppercase; margin-left: 5px; }
+        .tag-ord { background: #dcfce7; color: #166534; }
+        .tag-ext { background: #fef9c3; color: #854d0e; }
+        .tag-fra { background: #fee2e2; color: #991b1b; }
+        footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); color: #64748b; font-size: 0.9rem; }
+        .logo-footer { max-width: 200px; margin-bottom: 10px; }
+        @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>
+        <img src="01logo.png" alt="Logo Municipalidad" class="logo-header">
+        <h1>Calculadora de Multas por Desmembración</h1>
+        <div class="subtitle">Municipalidad de Quetzaltenango</div>
+    </header>
+
+    <div class="grid">
+        <div class="input-card">
+            <label>Categorización del Predio (POT):</label>
+            <select id="cat" onchange="liquidar()">
+                <optgroup label="Parámetros Urbanos (Art. 28)">
+                    <option value="URB-Q1">URB-Q1 (500m² / 15m)</option>
+                    <option value="URB-Q2">URB-Q2 (400m² / 15m)</option>
+                    <option value="URB-Q3">URB-Q3 (300m² / 10m)</option>
+                    <option value="URB-Q4">URB-Q4 (150m² / 6m)</option>
+                    <option value="URB-Q5">URB-Q5 (100m² / 5m)</option>
+                    <option value="URB-Q6">URB-Q6 (100m² / 5m)</option>
+                    <option value="URB-Q7">URB-Q7 (200m² / 6m)</option>
+                    <option value="URB-PRO">URB-PRO (400m² / 15m)</option>
+                </optgroup>
+                <optgroup label="Parámetros Rurales (Art. 41-43)">
+                    <option value="RUR-AGR">RUR-AGR (200m² / 0m)</option>
+                    <option value="RUR-AGR-CM">RUR-AGR-CM (400m² / 0m)</option>
+                    <option value="RUR-CP">RUR-CP (100m² / 5m)</option>
+                </optgroup>
+            </select>
+
+            <label>Área Desmembrada:</label>
+            <input type="number" id="areaReal" placeholder="m² resultantes" oninput="liquidar()">
+
+            <label>Frente:</label>
+            <input type="number" id="frenteReal" placeholder="metros lineales" oninput="liquidar()">
+        </div>
+
+        <div class="results-card">
+            <h3>Detalle de Liquidación</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Descripción</th>
+                        <th>Cálculo Interno</th>
+                        <th style="text-align: right;">Subtotal</th>
+                    </tr>
+                </thead>
+                <tbody id="billing-body">
+                    <!-- Filas dinámicas -->
+                </tbody>
+            </table>
+            <div class="total-row" id="totalLiquidacion">Q 0.00</div>
+        </div>
+    </div>
+
+    <footer>
+        <img src="02logo.png" alt="Estamos Trabajando" class="logo-footer"><br>
+        Quetzaltenango 2026 - melrebi
+    </footer>
+</div>
+
+<script>
+    const data = {
+        "URB-Q1": { a: 500, f: 15, t: "U" }, "URB-Q2": { a: 400, f: 15, t: "U" },
+        "URB-Q3": { a: 300, f: 10, t: "U" }, "URB-Q4": { a: 150, f: 6, t: "U" },
+        "URB-Q5": { a: 100, f: 5, t: "U" }, "URB-Q6": { a: 100, f: 5, t: "U" },
+        "URB-Q7": { a: 200, f: 6, t: "U" }, "URB-PRO": { a: 400, f: 15, t: "U" },
+        "RUR-AGR": { a: 200, f: 0, t: "R" }, "RUR-AGR-CM": { a: 400, f: 0, t: "R" },
+        "RUR-CP": { a: 100, f: 5, t: "R" }
+    };
+
+    const rates = {
+        U: { a: [5, 10, 15, 20], f: [15, 30, 45, 60], ordA: 3, extA: 5, ordF: 9, extF: 15 },
+        R: { a: [3, 6, 9, 12], f: [9, 18, 27, 36], ordA: 3, extA: 5, ordF: 9, extF: 15 }
+    };
+
+    function formatQ(val) { return val.toLocaleString('es-GT', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+
+    function liquidar() {
+        const cat = document.getElementById('cat').value;
+        const realA = parseFloat(document.getElementById('areaReal').value) || 0;
+        const realF = parseFloat(document.getElementById('frenteReal').value) || 0;
+        
+        // Según instrucciones, la superficie total se asume igual al área desmembrada
+        const totalA = realA; 
+        
+        const config = data[cat];
+        const r = rates[config.t];
+        let total = 0;
+        let html = "";
+
+        // MULTA 1: Art 123 a.1
+        if (totalA > 0) {
+            const m1 = totalA * 3;
+            total += m1;
+            html += `<tr><td>Desmembración s/Aut.</td><td>${totalA} m² × Q3.00</td><td align="right">Q ${formatQ(m1)}</td></tr>`;
+        }
+
+        // MULTA 2: Área
+        if (realA > 0 && realA < config.a) {
+            const faltante = config.a - realA;
+            const pct = (faltante / config.a) * 100;
+            let m2 = 0; let sancion = 0; let tag = "";
+
+            if (pct <= 10) { sancion = r.ordA; tag = "tag-ord"; }
+            else if (pct <= 20) { sancion = r.extA; tag = "tag-ext"; }
+            else { 
+                const idx = Math.min(3, Math.floor((pct-0.01) / 25));
+                sancion = r.a[idx]; tag = "tag-fra";
+            }
+            m2 = faltante * sancion;
+            total += m2;
+            html += `<tr><td>Incump. Área <span class="tag ${tag}">${pct.toFixed(1)}%</span></td><td>${faltante.toFixed(2)} m² × Q${sancion.toFixed(2)}</td><td align="right">Q ${formatQ(m2)}</td></tr>`;
+        }
+
+        // MULTA 3: Frente
+        if (config.f > 0 && realF > 0 && realF < config.f) {
+            const faltante = config.f - realF;
+            const pct = (faltante / config.f) * 100;
+            let m3 = 0; let sancion = 0; let tag = "";
+
+            if (pct <= 10) { sancion = r.ordF; tag = "tag-ord"; }
+            else if (pct <= 20) { sancion = r.extF; tag = "tag-ext"; }
+            else { 
+                const idx = Math.min(3, Math.floor((pct-0.01) / 25));
+                sancion = r.f[idx]; tag = "tag-fra";
+            }
+            m3 = faltante * sancion;
+            total += m3;
+            html += `<tr><td>Incump. Frente <span class="tag ${tag}">${pct.toFixed(1)}%</span></td><td>${faltante.toFixed(2)} m × Q${sancion.toFixed(2)}</td><td align="right">Q ${formatQ(m3)}</td></tr>`;
+        }
+
+        document.getElementById('billing-body').innerHTML = html;
+        document.getElementById('totalLiquidacion').textContent = "Q " + formatQ(total);
+    }
+</script>
+</body>
+</html>
