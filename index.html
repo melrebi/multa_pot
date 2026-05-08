@@ -25,6 +25,7 @@
         .tag-ord { background: #dcfce7; color: #166534; }
         .tag-ext { background: #fef9c3; color: #854d0e; }
         .tag-fra { background: #fee2e2; color: #991b1b; }
+        .tag-ok { background: #e0f2fe; color: #0369a1; }
         footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); color: #64748b; font-size: 0.9rem; }
         .logo-footer { max-width: 200px; margin-bottom: 10px; }
         @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
@@ -34,8 +35,8 @@
 
 <div class="container">
     <header>
-        <img src="01logo.png" alt="Logo Municipalidad" class="logo-header">
-        <h1>Calculadora de Multas por Desmembración</h1>
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Escudo_de_Quetzaltenango.png/512px-Escudo_de_Quetzaltenango.png" alt="Logo Municipalidad" class="logo-header">
+        <h1>Calculadora de multas por Desmembración</h1>
         <div class="subtitle">Municipalidad de Quetzaltenango</div>
     </header>
 
@@ -47,7 +48,7 @@
                     <option value="URB-Q1">URB-Q1 (500m² / 15m)</option>
                     <option value="URB-Q2">URB-Q2 (400m² / 15m)</option>
                     <option value="URB-Q3">URB-Q3 (300m² / 10m)</option>
-                    <option value="URB-Q4">URB-Q4 (150m² / 6m)</option>
+                    <option value="URB-Q4" selected>URB-Q4 (150m² / 6m)</option>
                     <option value="URB-Q5">URB-Q5 (100m² / 5m)</option>
                     <option value="URB-Q6">URB-Q6 (100m² / 5m)</option>
                     <option value="URB-Q7">URB-Q7 (200m² / 6m)</option>
@@ -78,27 +79,33 @@
                     </tr>
                 </thead>
                 <tbody id="billing-body">
-                    <!-- Filas dinámicas -->
-                </tbody>
+                    </tbody>
             </table>
             <div class="total-row" id="totalLiquidacion">Q 0.00</div>
         </div>
     </div>
 
     <footer>
-        <img src="02logo.png" alt="Estamos Trabajando" class="logo-footer"><br>
+        <img src="https://blogger.googleusercontent.com/img/b/R29vZ2xl/AVvXsEiuY6L0S6u8T-GvN9X-P-Fv-9nJ-N8f-Z-H-S-N-H-N-H-N-H-N-H-N-H-N-H-N-H-N-H-N-H-N-H-N-H-N-H-N-H-N/s1600/estamos_trabajando.png" alt="Estamos Trabajando" class="logo-footer"><br>
         Quetzaltenango 2026 - melrebi
     </footer>
 </div>
 
 <script>
+    // Se ha incorporado 'a_ord' (área límite ordinaria) y 'a_ext' (área límite extraordinaria)
+    // Extraídos del POT y el ejemplo. Los datos de categorías no mencionadas pueden ajustarse aquí mismo.
     const data = {
-        "URB-Q1": { a: 500, f: 15, t: "U" }, "URB-Q2": { a: 400, f: 15, t: "U" },
-        "URB-Q3": { a: 300, f: 10, t: "U" }, "URB-Q4": { a: 150, f: 6, t: "U" },
-        "URB-Q5": { a: 100, f: 5, t: "U" }, "URB-Q6": { a: 100, f: 5, t: "U" },
-        "URB-Q7": { a: 200, f: 6, t: "U" }, "URB-PRO": { a: 400, f: 15, t: "U" },
-        "RUR-AGR": { a: 200, f: 0, t: "R" }, "RUR-AGR-CM": { a: 400, f: 0, t: "R" },
-        "RUR-CP": { a: 100, f: 5, t: "R" }
+        "URB-Q1": { a: 500, a_ord: 425, a_ext: 250, f: 15, f_ord: 12.75, f_ext: 10.5, t: "U" },
+        "URB-Q2": { a: 400, a_ord: 340, a_ext: 220, f: 15, f_ord: 12.75, f_ext: 10.5, t: "U" },
+        "URB-Q3": { a: 300, a_ord: 255, a_ext: 165, f: 10, f_ord: 8.5, f_ext: 7.0, t: "U" },
+        "URB-Q4": { a: 150, a_ord: 135, a_ext: 92.5, f: 6, f_ord: 5.1, f_ext: 4.2, t: "U" },
+        "URB-Q5": { a: 100, a_ord: 90, a_ext: 60, f: 5, f_ord: 4.25, f_ext: 3.5, t: "U" },
+        "URB-Q6": { a: 100, a_ord: 90, a_ext: 60, f: 5, f_ord: 4.25, f_ext: 3.5, t: "U" },
+        "URB-Q7": { a: 200, a_ord: 170, a_ext: 110, f: 6, f_ord: 5.1, f_ext: 4.2, t: "U" },
+        "URB-PRO": { a: 400, a_ord: 340, a_ext: 220, f: 15, f_ord: 12.75, f_ext: 10.5, t: "U" },
+        "RUR-AGR": { a: 200, a_ord: 180, a_ext: 170, f: 0, f_ord: 0, f_ext: 0, t: "R" },
+        "RUR-AGR-CM": { a: 400, a_ord: 360, a_ext: 340, f: 0, f_ord: 0, f_ext: 0, t: "R" },
+        "RUR-CP": { a: 100, a_ord: 90, a_ext: 85, f: 5, f_ord: 4.5, f_ext: 4.25, t: "R" }
     };
 
     const rates = {
@@ -113,58 +120,74 @@
         const realA = parseFloat(document.getElementById('areaReal').value) || 0;
         const realF = parseFloat(document.getElementById('frenteReal').value) || 0;
         
-        // Según instrucciones, la superficie total se asume igual al área desmembrada
         const totalA = realA; 
-        
         const config = data[cat];
         const r = rates[config.t];
         let total = 0;
         let html = "";
 
-        // MULTA 1: Art 123 a.1
+        // MULTA 1: Desmembración s/Aut.
         if (totalA > 0) {
             const m1 = totalA * 3;
             total += m1;
             html += `<tr><td>Desmembración s/Aut.</td><td>${totalA} m² × Q3.00</td><td align="right">Q ${formatQ(m1)}</td></tr>`;
         }
 
-        // MULTA 2: Área
-        if (realA > 0 && realA < config.a) {
+        // MULTA 2: Lógica de Área Exacta
+        if (realA >= config.a) {
+            // Cumple el requerimiento
+            html += `<tr><td>Área Mínima <span class="tag tag-ok">Cumple</span></td><td>${realA} m² ≥ ${config.a} m²</td><td align="right">Q 0.00</td></tr>`;
+        } else if (realA > 0) {
             const faltante = config.a - realA;
-            const pct = (faltante / config.a) * 100;
-            let m2 = 0; let sancion = 0; let tag = "";
+            let m2 = 0; let sancion = 0; let tag = ""; let label = "";
 
-            if (pct <= 10) { sancion = r.ordA; tag = "tag-ord"; }
-            else if (pct <= 20) { sancion = r.extA; tag = "tag-ext"; }
-            else { 
+            // Se evalúa por metros exactos, NO por porcentaje
+            if (realA >= config.a_ord) {
+                sancion = r.ordA; tag = "tag-ord"; label = "Tol. Ordinaria";
+            } else if (realA >= config.a_ext) {
+                sancion = r.extA; tag = "tag-ext"; label = "Tol. Extraordinaria";
+            } else { 
+                // Franjeo (Si es menor a la Ext., se aplica porcentaje del Art. 145 Ter sobre el total faltante)
+                const pct = (faltante / config.a) * 100;
                 const idx = Math.min(3, Math.floor((pct-0.01) / 25));
-                sancion = r.a[idx]; tag = "tag-fra";
+                sancion = r.a[idx]; tag = "tag-fra"; label = "Franjeo";
             }
             m2 = faltante * sancion;
             total += m2;
-            html += `<tr><td>Incump. Área <span class="tag ${tag}">${pct.toFixed(1)}%</span></td><td>${faltante.toFixed(2)} m² × Q${sancion.toFixed(2)}</td><td align="right">Q ${formatQ(m2)}</td></tr>`;
+            html += `<tr><td>${label} - Área <span class="tag ${tag}">Incumplimiento</span></td><td>${faltante.toFixed(2)} m² × Q${sancion.toFixed(2)}</td><td align="right">Q ${formatQ(m2)}</td></tr>`;
         }
 
-        // MULTA 3: Frente
-        if (config.f > 0 && realF > 0 && realF < config.f) {
-            const faltante = config.f - realF;
-            const pct = (faltante / config.f) * 100;
-            let m3 = 0; let sancion = 0; let tag = "";
+        // MULTA 3: Lógica de Frente Exacto
+        if (config.f > 0) {
+            if (realF >= config.f) {
+                // Cumple el requerimiento
+                html += `<tr><td>Frente Mínimo <span class="tag tag-ok">Cumple</span></td><td>${realF} m ≥ ${config.f} m</td><td align="right">Q 0.00</td></tr>`;
+            } else if (realF > 0) {
+                const faltante = config.f - realF;
+                let m3 = 0; let sancion = 0; let tag = ""; let label = "";
 
-            if (pct <= 10) { sancion = r.ordF; tag = "tag-ord"; }
-            else if (pct <= 20) { sancion = r.extF; tag = "tag-ext"; }
-            else { 
-                const idx = Math.min(3, Math.floor((pct-0.01) / 25));
-                sancion = r.f[idx]; tag = "tag-fra";
+                // Se evalúa por metros exactos
+                if (realF >= config.f_ord) {
+                    sancion = r.ordF; tag = "tag-ord"; label = "Tol. Ordinaria";
+                } else if (realF >= config.f_ext) {
+                    sancion = r.extF; tag = "tag-ext"; label = "Tol. Extraordinaria";
+                } else { 
+                    const pct = (faltante / config.f) * 100;
+                    const idx = Math.min(3, Math.floor((pct-0.01) / 25));
+                    sancion = r.f[idx]; tag = "tag-fra"; label = "Franjeo";
+                }
+                m3 = faltante * sancion;
+                total += m3;
+                html += `<tr><td>${label} - Frente <span class="tag ${tag}">Incumplimiento</span></td><td>${faltante.toFixed(2)} m × Q${sancion.toFixed(2)}</td><td align="right">Q ${formatQ(m3)}</td></tr>`;
             }
-            m3 = faltante * sancion;
-            total += m3;
-            html += `<tr><td>Incump. Frente <span class="tag ${tag}">${pct.toFixed(1)}%</span></td><td>${faltante.toFixed(2)} m × Q${sancion.toFixed(2)}</td><td align="right">Q ${formatQ(m3)}</td></tr>`;
         }
 
         document.getElementById('billing-body').innerHTML = html;
         document.getElementById('totalLiquidacion').textContent = "Q " + formatQ(total);
     }
+    
+    // Al cargar la página, ejecuta el cálculo con URB-Q4 y campos vacíos
+    liquidar();
 </script>
 </body>
 </html>
