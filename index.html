@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Calculadora de multas por Desmembración</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
     <style>
         :root { --primary: #1e3a8a; --secondary: #3b82f6; --bg: #f8fafc; --text: #1e293b; --border: #e2e8f0; }
         body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
@@ -16,16 +17,21 @@
         .input-card { background: #f1f5f9; padding: 25px; border-radius: 8px; }
         label { display: block; margin: 15px 0 5px; font-weight: 600; font-size: 0.9rem; }
         select, input { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 1rem; box-sizing: border-box; }
-        .results-card { border: 1px solid var(--border); padding: 25px; border-radius: 8px; }
+        .results-card { border: 1px solid var(--border); padding: 25px; border-radius: 8px; background-color: #ffffff; }
         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
         th { text-align: left; font-size: 0.8rem; color: #64748b; border-bottom: 2px solid var(--border); padding-bottom: 10px; text-transform: uppercase; }
         td { padding: 12px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
         .total-row { font-weight: 800; font-size: 1.4rem; color: var(--primary); text-align: right; margin-top: 25px; padding-top: 15px; border-top: 3px double var(--border); }
-        .tag { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; text-transform: uppercase; margin-left: 5px; }
+        .tag { font-size: 0.65rem; padding: 2px 6px; border-radius: 4px; font-weight: bold; text-transform: uppercase; margin-left: 5px; display: inline-block; margin-top: 4px; }
         .tag-ord { background: #dcfce7; color: #166534; }
         .tag-ext { background: #fef9c3; color: #854d0e; }
         .tag-fra { background: #fee2e2; color: #991b1b; }
         .tag-ok { background: #e0f2fe; color: #0369a1; }
+        
+        /* Estilos del botón de copiar */
+        .btn-copiar { width: 100%; padding: 12px; background-color: var(--secondary); color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 600; cursor: pointer; margin-top: 15px; transition: background-color 0.2s; }
+        .btn-copiar:hover { background-color: #2563eb; }
+        
         footer { text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--border); color: #64748b; font-size: 0.9rem; }
         .logo-footer { max-width: 200px; margin-bottom: 10px; }
         @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } }
@@ -68,20 +74,24 @@
             <input type="number" id="frenteReal" placeholder="metros lineales" oninput="liquidar()">
         </div>
 
-        <div class="results-card">
-            <h3>Detalle de Liquidación</h3>
-            <table>
-                <thead>
-                    <tr>
-                        <th>Descripción</th>
-                        <th>Cálculo Interno</th>
-                        <th style="text-align: right;">Subtotal</th>
-                    </tr>
-                </thead>
-                <tbody id="billing-body">
-                    </tbody>
-            </table>
-            <div class="total-row" id="totalLiquidacion">Q 0.00</div>
+        <div>
+            <div class="results-card" id="capture-area">
+                <h3 style="margin-top: 0; color: var(--primary);">Calculo de Multa</h3>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Descripción</th>
+                            <th>Cálculo Interno</th>
+                            <th style="text-align: right;">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody id="billing-body">
+                        </tbody>
+                </table>
+                <div class="total-row" id="totalLiquidacion">Q 0.00</div>
+            </div>
+            
+            <button class="btn-copiar" id="copyBtn" onclick="copiarImagen()">📋 Copiar Tabla (Imagen)</button>
         </div>
     </div>
 
@@ -92,20 +102,19 @@
 </div>
 
 <script>
-    // Se ha incorporado 'a_ord' (área límite ordinaria) y 'a_ext' (área límite extraordinaria)
-    // Extraídos del POT y el ejemplo. Los datos de categorías no mencionadas pueden ajustarse aquí mismo.
+    // Valores EXACTOS extraídos de los Artículos 28 y 41-43 del documento POT
     const data = {
         "URB-Q1": { a: 500, a_ord: 425, a_ext: 250, f: 15, f_ord: 12.75, f_ext: 10.5, t: "U" },
         "URB-Q2": { a: 400, a_ord: 340, a_ext: 220, f: 15, f_ord: 12.75, f_ext: 10.5, t: "U" },
-        "URB-Q3": { a: 300, a_ord: 255, a_ext: 165, f: 10, f_ord: 8.5, f_ext: 7.0, t: "U" },
-        "URB-Q4": { a: 150, a_ord: 135, a_ext: 92.5, f: 6, f_ord: 5.1, f_ext: 4.2, t: "U" },
-        "URB-Q5": { a: 100, a_ord: 90, a_ext: 60, f: 5, f_ord: 4.25, f_ext: 3.5, t: "U" },
-        "URB-Q6": { a: 100, a_ord: 90, a_ext: 60, f: 5, f_ord: 4.25, f_ext: 3.5, t: "U" },
-        "URB-Q7": { a: 200, a_ord: 170, a_ext: 110, f: 6, f_ord: 5.1, f_ext: 4.2, t: "U" },
-        "URB-PRO": { a: 400, a_ord: 340, a_ext: 220, f: 15, f_ord: 12.75, f_ext: 10.5, t: "U" },
-        "RUR-AGR": { a: 200, a_ord: 180, a_ext: 170, f: 0, f_ord: 0, f_ext: 0, t: "R" },
-        "RUR-AGR-CM": { a: 400, a_ord: 360, a_ext: 340, f: 0, f_ord: 0, f_ext: 0, t: "R" },
-        "RUR-CP": { a: 100, a_ord: 90, a_ext: 85, f: 5, f_ord: 4.5, f_ext: 4.25, t: "R" }
+        "URB-Q3": { a: 300, a_ord: 255, a_ext: 180, f: 10, f_ord: 9, f_ext: 7.5, t: "U" },
+        "URB-Q4": { a: 150, a_ord: 135, a_ext: 97.5, f: 6, f_ord: 5.55, f_ext: 5, t: "U" },
+        "URB-Q5": { a: 100, a_ord: 90, a_ext: 80, f: 5, f_ord: 5, f_ext: 5, t: "U" }, // Frente no aplica tol.
+        "URB-Q6": { a: 100, a_ord: 90, a_ext: 80, f: 5, f_ord: 5, f_ext: 5, t: "U" }, // Frente no aplica tol.
+        "URB-Q7": { a: 200, a_ord: 170, a_ext: 150, f: 6, f_ord: 5.7, f_ext: 5.4, t: "U" },
+        "URB-PRO":{ a: 400, a_ord: 340, a_ext: 220, f: 15, f_ord: 12.75, f_ext: 10.5, t: "U" },
+        "RUR-AGR":{ a: 200, a_ord: 180, a_ext: 170, f: 0, f_ord: 0, f_ext: 0, t: "R" },
+        "RUR-AGR-CM":{ a: 400, a_ord: 360, a_ext: 340, f: 0, f_ord: 0, f_ext: 0, t: "R" },
+        "RUR-CP": { a: 100, a_ord: 90, a_ext: 80, f: 5, f_ord: 5, f_ext: 5, t: "R" } // Frente no aplica tol.
     };
 
     const rates = {
@@ -135,38 +144,35 @@
 
         // MULTA 2: Lógica de Área Exacta
         if (realA >= config.a) {
-            // Cumple el requerimiento
-            html += `<tr><td>Área Mínima <span class="tag tag-ok">Cumple</span></td><td>${realA} m² ≥ ${config.a} m²</td><td align="right">Q 0.00</td></tr>`;
+            html += `<tr><td>Área Mínima <br><span class="tag tag-ok">Cumple Requisito</span></td><td>${realA} m² ≥ ${config.a} m²</td><td align="right">Q 0.00</td></tr>`;
         } else if (realA > 0) {
             const faltante = config.a - realA;
-            let m2 = 0; let sancion = 0; let tag = ""; let label = "";
+            let m2 = 0; let sancion = 0; let tag = ""; let label = ""; let extraInfo = "";
 
-            // Se evalúa por metros exactos, NO por porcentaje
             if (realA >= config.a_ord) {
                 sancion = r.ordA; tag = "tag-ord"; label = "Tol. Ordinaria";
             } else if (realA >= config.a_ext) {
                 sancion = r.extA; tag = "tag-ext"; label = "Tol. Extraordinaria";
             } else { 
-                // Franjeo (Si es menor a la Ext., se aplica porcentaje del Art. 145 Ter sobre el total faltante)
                 const pct = (faltante / config.a) * 100;
                 const idx = Math.min(3, Math.floor((pct-0.01) / 25));
                 sancion = r.a[idx]; tag = "tag-fra"; label = "Franjeo";
+                // Muestra porcentaje de incumplimiento específico
+                extraInfo = `<br><span class="tag tag-fra">${pct.toFixed(2)}% Incumplimiento</span>`;
             }
             m2 = faltante * sancion;
             total += m2;
-            html += `<tr><td>${label} - Área <span class="tag ${tag}">Incumplimiento</span></td><td>${faltante.toFixed(2)} m² × Q${sancion.toFixed(2)}</td><td align="right">Q ${formatQ(m2)}</td></tr>`;
+            html += `<tr><td>${label} - Área${extraInfo}</td><td>${faltante.toFixed(2)} m² × Q${sancion.toFixed(2)}</td><td align="right">Q ${formatQ(m2)}</td></tr>`;
         }
 
         // MULTA 3: Lógica de Frente Exacto
         if (config.f > 0) {
             if (realF >= config.f) {
-                // Cumple el requerimiento
-                html += `<tr><td>Frente Mínimo <span class="tag tag-ok">Cumple</span></td><td>${realF} m ≥ ${config.f} m</td><td align="right">Q 0.00</td></tr>`;
+                html += `<tr><td>Frente Mínimo <br><span class="tag tag-ok">Cumple Requisito</span></td><td>${realF} m ≥ ${config.f} m</td><td align="right">Q 0.00</td></tr>`;
             } else if (realF > 0) {
                 const faltante = config.f - realF;
-                let m3 = 0; let sancion = 0; let tag = ""; let label = "";
+                let m3 = 0; let sancion = 0; let tag = ""; let label = ""; let extraInfo = "";
 
-                // Se evalúa por metros exactos
                 if (realF >= config.f_ord) {
                     sancion = r.ordF; tag = "tag-ord"; label = "Tol. Ordinaria";
                 } else if (realF >= config.f_ext) {
@@ -175,18 +181,53 @@
                     const pct = (faltante / config.f) * 100;
                     const idx = Math.min(3, Math.floor((pct-0.01) / 25));
                     sancion = r.f[idx]; tag = "tag-fra"; label = "Franjeo";
+                    // Muestra porcentaje de incumplimiento específico
+                    extraInfo = `<br><span class="tag tag-fra">${pct.toFixed(2)}% Incumplimiento</span>`;
                 }
                 m3 = faltante * sancion;
                 total += m3;
-                html += `<tr><td>${label} - Frente <span class="tag ${tag}">Incumplimiento</span></td><td>${faltante.toFixed(2)} m × Q${sancion.toFixed(2)}</td><td align="right">Q ${formatQ(m3)}</td></tr>`;
+                html += `<tr><td>${label} - Frente${extraInfo}</td><td>${faltante.toFixed(2)} m × Q${sancion.toFixed(2)}</td><td align="right">Q ${formatQ(m3)}</td></tr>`;
             }
         }
 
         document.getElementById('billing-body').innerHTML = html;
         document.getElementById('totalLiquidacion').textContent = "Q " + formatQ(total);
     }
-    
-    // Al cargar la página, ejecuta el cálculo con URB-Q4 y campos vacíos
+
+    // Función para copiar la tabla como imagen
+    async function copiarImagen() {
+        const btn = document.getElementById('copyBtn');
+        const originalText = btn.innerHTML;
+        btn.innerHTML = "⏳ Generando imagen...";
+        
+        const captura = document.getElementById('capture-area');
+        
+        try {
+            const canvas = await html2canvas(captura, { 
+                scale: 2, // Mejora la calidad para Google Docs
+                backgroundColor: "#ffffff" // Evita fondos transparentes
+            });
+            
+            canvas.toBlob(blob => {
+                if (blob) {
+                    const item = new ClipboardItem({ "image/png": blob });
+                    navigator.clipboard.write([item]).then(() => {
+                        btn.innerHTML = "✅ ¡Tabla copiada! Pégala en Docs";
+                        setTimeout(() => btn.innerHTML = originalText, 3500);
+                    }).catch(err => {
+                        console.error(err);
+                        btn.innerHTML = "❌ Permiso denegado por el navegador";
+                        setTimeout(() => btn.innerHTML = originalText, 3000);
+                    });
+                }
+            });
+        } catch (error) {
+            console.error("Error capturando la tabla:", error);
+            btn.innerHTML = "❌ Ocurrió un error";
+            setTimeout(() => btn.innerHTML = originalText, 3000);
+        }
+    }
+
     liquidar();
 </script>
 </body>
